@@ -29,12 +29,12 @@ module.exports = {
 
       let compressedData = data.readArrayBuffer(compressedByteSize - 4)
 
-      if (magic !== 'SNAP') throw new Error('Unknown compressed stringtable format')
+      if (magic !== 'SNAP') throw Error('Unknown compressed stringtable format')
 
       let decompressedData = snappy.uncompress(compressedData)
 
       if (decompressedData.byteLength !== decompressedByteSize) {
-        throw new Error('Incorrect length of decompressed stringtable')
+        throw Error('Incorrect length of decompressed stringtable')
       }
 
       data = new BitStream(decompressedData.buffer)
@@ -52,7 +52,7 @@ module.exports = {
       lastEntry = entryIndex
 
       if (entryIndex < 0 || entryIndex > maxEntries) {
-        throw new Error('Invalid string index for string table')
+        throw Error('Invalid string index for string table')
       }
 
       let value
