@@ -11,7 +11,15 @@ let HEADER_LENGTH = 8576
 function DemTF (buffer) {
   let data = typeof buffer === 'string' ? fs.readFileSync(buffer) : buffer
   this.stream = new BitStream(data)
-  this.state = {}
+  this.state = {
+    userInfo: new Map(),
+    stringTables: [],
+    staticBaseLines: new Map(),
+    staticBaselineCache: new Map(),
+    instanceBaselines: [new Map(), new Map()],
+    serverClasses: [],
+    sendTables: new Map()
+  }
 }
 
 DemTF.prototype.getHeader = function () {

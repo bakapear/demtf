@@ -99,6 +99,9 @@ module.exports = {
 
     if (data.bitsLeft > 7) throw Error('Unexpected remaining data in datatable (' + data.bitsLeft + ' bits)')
 
+    this.state.serverClasses = serverClasses
+    this.state.sendTables = tableMap
+
     return {
       tick,
       tables,
