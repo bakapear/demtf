@@ -23,8 +23,7 @@ module.exports = {
       for (let i = 0; i < numProps; i++) {
         let propType = data.readBits(5)
         let propName = data.readASCIIString()
-        let nFlagsBits = 16 // might be 11 (old?), 13 (new?), 16(networked) or 17(??)
-        let flags = data.readBits(nFlagsBits)
+        let flags = data.readBits(16)
         let prop = new SendPropDefinition(propType, propName, flags, tableName)
         if (propType === SENDPROP_TYPE.DataTable) {
           prop.excludeDTName = data.readASCIIString()
@@ -109,6 +108,76 @@ module.exports = {
     }
   },
   encode (stream, message) {
-    throw Error('Not implemented yet')
+    stream.writeInt32(message.tick)
+
+    stream.mark += 32 // tell teststream to skip 32 bits
+    let startIndex = stream.index
+    stream.index += 32
+
+    for (let table of message.tables) {
+      stream.writeBoolean(true)
+      stream.writeBoolean(table.needsDecoder)
+      stream.writeASCIIString(table.name)
+
+      let len = table.props.length + table.props.filter(x => x.arrayProperty).length
+      stream.writeBits(len, 10)
+
+      for (let prop of table.props) {
+        if (prop.arrayProperty) encodeSendPropDefinition(stream, prop.arrayProperty)
+        encodeSendPropDefinition(stream, prop)
+      }
+    }
+
+    stream.writeBoolean(false)
+
+    stream.writeUint16(message.serverClasses.length)
+
+    for (let serverClass of message.serverClasses) {
+      stream.writeUint16(serverClass.id)
+      stream.writeASCIIString(serverClass.name)
+      stream.writeASCIIString(serverClass.dataTable)
+    }
+
+    // 3 mysterious remaining bits
+    stream.writeBits(2, 1)
+    stream.writeBits(0, 1)
+    stream.writeBits(0, 1)
+
+    let endIndex = stream.index
+
+    stream.index = startIndex
+    stream.writeInt32(endIndex / 8 - startIndex / 8 - 4)
+    stream.index = endIndex
+  }
+}
+
+function encodeSendPropDefinition (stream, prop) {
+  stream.writeBits(prop.type, 5)
+  stream.writeASCIIString(prop.name)
+  stream.writeBits(prop.flags, 16)
+
+  if (prop.type === SENDPROP_TYPE.DataTable) {
+    if (!prop.table) throw new Error('Missing linked table')
+    stream.writeASCIIString(prop.table.name)
+  } else {
+    if (prop.isExcludeProp()) {
+      if (!prop.excludeDTName) throw new Error('Missing linked table')
+      stream.writeASCIIString(prop.excludeDTName)
+    } else if (prop.type === SENDPROP_TYPE.Array) {
+      stream.writeBits(prop.numElements, 10)
+    } else {
+      stream.writeFloat32(prop.lowValue)
+      stream.writeFloat32(prop.highValue)
+
+      if (prop.hasFlag(SENDPROP_FLAG.NOSCALE) && (prop.type === SENDPROP_TYPE.Float || (prop.type === SENDPROP_TYPE.Vector && !prop.hasFlag(SENDPROP_FLAG.NORMAL)))) {
+        if (prop.originalBitCount === null || typeof prop.originalBitCount === 'undefined') {
+          stream.writeBits(prop.bitCount / 3, 7)
+        } else {
+          stream.writeBits(prop.originalBitCount, 7)
+        }
+      } else {
+        stream.writeBits(prop.bitCount, 7)
+      }
+    }
   }
 }
