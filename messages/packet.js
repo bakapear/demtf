@@ -3,14 +3,14 @@ module.exports = {
     let tick = stream.readInt32()
     let flags = stream.readInt32()
 
-    let viewOrigin = []
-    let viewAngles = []
-    let localViewAngles = []
+    let viewOrigin = [[], []]
+    let viewAngles = [[], []]
+    let localViewAngles = [[], []]
 
     for (let i = 0; i < 2; i++) {
-      viewOrigin[i] = [stream.readFloat32(), stream.readFloat32(), stream.readFloat32()]
-      viewAngles[i] = [stream.readFloat32(), stream.readFloat32(), stream.readFloat32()]
-      localViewAngles[i] = [stream.readFloat32(), stream.readFloat32(), stream.readFloat32()]
+      for (let o of [viewOrigin, viewAngles, localViewAngles]) {
+        for (let j = 0; j < 3; j++) o[i][j] = stream.readFloat32()
+      }
     }
 
     let sequenceIn = stream.readInt32()
@@ -31,7 +31,19 @@ module.exports = {
     }
   },
   encode (stream, message) {
-    throw Error('Not implemented yet')
-    // packetStream deleted, replaced with packets array
+    stream.writeInt32(message.tick)
+    stream.writeInt32(message.flags)
+
+    for (let i = 0; i < 2; i++) {
+      for (let o of [message.viewOrigin, message.viewAngles, message.localViewAngles]) {
+        for (let j = 0; j < 3; j++) stream.writeFloat32(o[i][j])
+      }
+    }
+
+    stream.writeInt32(message.sequenceIn)
+    stream.writeInt32(message.sequenceOut)
+
+    stream.writeInt32(message.packetStream.length / 8)
+    stream.writeBitStream(message.packetStream)
   }
 }
