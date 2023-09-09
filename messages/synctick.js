@@ -3,6 +3,6 @@ module.exports = {
     return { tick: stream.readInt32() }
   },
   encode (stream, message) {
-    throw Error('Not implemented yet')
+    stream.writeInt32(message.tick)
   }
 }
