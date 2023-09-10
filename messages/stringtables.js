@@ -6,6 +6,7 @@ module.exports = {
     let data = stream.readBitStream(length * 8)
 
     let tableCount = data.readUint8()
+
     let tables = []
     for (let i = 0; i < tableCount; i++) {
       let table = {
@@ -69,8 +70,6 @@ module.exports = {
       }
     }
 
-    // 4 bits left?? need to know what this is otherwise encoding is not 1:1
-
     this.state.stringTables = tables
 
     return {
@@ -79,7 +78,35 @@ module.exports = {
     }
   },
   encode (stream, message) {
-    throw Error('Not implemented yet')
+    stream.writeInt32(message.tick)
+
+    stream.mark += 32 // tell teststream to skip 32 bits
+    let startIndex = stream.index
+    stream.index += 32
+
+    stream.writeUint8(message.tables.length)
+
+    for (let table of message.tables) {
+      stream.writeASCIIString(table.name)
+      stream.writeUint16(table.entries.length)
+
+      for (let entry of table.entries) writeEntry(stream, entry)
+
+      if (table.clientEntries && table.clientEntries.length) {
+        stream.writeBoolean(true)
+        stream.writeUint16(table.clientEntries.length)
+        for (let entry of table.clientEntries) writeEntry(stream, entry)
+      } else stream.writeBoolean(false)
+    }
+
+    // 4 mysterious remaining bits
+    stream.writeBits(0, 4)
+
+    let endIndex = stream.index
+
+    stream.index = startIndex
+    stream.writeInt32(endIndex / 8 - startIndex / 8 - 4)
+    stream.index = endIndex
   }
 }
 
@@ -90,4 +117,17 @@ function readEntry (stream) {
     entry.extraData = stream.readBitStream(extraDataLength * 8)
   }
   return entry
+}
+
+function writeEntry (stream, entry) {
+  stream.writeUTF8String(entry.text)
+  if (entry.extraData) {
+    stream.writeBoolean(true)
+
+    stream.writeUint16(Math.ceil(entry.extraData.length / 8))
+    entry.extraData.index = 0
+    stream.writeBitStream(entry.extraData, entry.extraData.length)
+  } else {
+    stream.writeBoolean(false)
+  }
 }
