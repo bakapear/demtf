@@ -110,7 +110,6 @@ module.exports = {
   encode (stream, message) {
     stream.writeInt32(message.tick)
 
-    stream.mark += 32 // tell teststream to skip 32 bits
     let startIndex = stream.index
     stream.index += 32
 
@@ -138,13 +137,11 @@ module.exports = {
       stream.writeASCIIString(serverClass.dataTable)
     }
 
-    // 3 mysterious remaining bits
-    stream.writeBits(2, 1)
-    stream.writeBits(0, 1)
-    stream.writeBits(0, 1)
+    let bitsLeft = (Math.ceil(stream.index / 8) - (stream.index / 8)) * 8
+    if (stream.ignore) stream.ignore(bitsLeft)
+    stream.writeBits(0, bitsLeft)
 
     let endIndex = stream.index
-
     stream.index = startIndex
     stream.writeInt32(endIndex / 8 - startIndex / 8 - 4)
     stream.index = endIndex

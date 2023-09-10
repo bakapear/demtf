@@ -35,7 +35,6 @@ module.exports = {
     stream.writeInt32(message.tick)
     stream.writeInt32(message.sequenceOut)
 
-    stream.mark += 32 // tell teststream to skip 32 bits
     let startIndex = stream.index
     stream.index += 32
 
@@ -110,40 +109,13 @@ module.exports = {
       stream.writeUint16(cmd.mousedy)
     } else stream.writeBoolean(false)
 
-    // 3 mysterious remaining bits, maybe minify this
-    if (hasOnly(cmd, [])) writeArr(stream, [1, 1, 1])
-    else if (hasOnly(cmd, ['mousedx', 'mousedy'])) writeArr(stream, [1, 1, 1])
-
-    else if (hasOnly(cmd, ['forwardmove', 'buttons'])) writeArr(stream, [0, 1, 1])
-    else if (hasOnly(cmd, ['sidemove', 'buttons'])) writeArr(stream, [0, 1, 1])
-
-    else if (hasOnly(cmd, ['forwardmove', 'buttons', 'mousedx'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['forwardmove', 'buttons', 'mousedx', 'mousedy'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['forwardmove', 'sidemove', 'buttons', 'mousedx', 'mousedy'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['forwardmove', 'sidemove', 'buttons', 'mousedx'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['forwardmove', 'sidemove', 'buttons'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['forwardmove', 'buttons', 'mousedy'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['mousedx'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['mousedy'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['forwardmove', 'sidemove', 'buttons', 'mousedy'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['sidemove', 'buttons', 'mousedx'])) writeArr(stream, [0, 0, 0])
-    else if (hasOnly(cmd, ['sidemove', 'buttons', 'mousedx', 'mousedy'])) writeArr(stream, [0, 0, 0])
+    let bitsLeft = (Math.ceil(stream.index / 8) - (stream.index / 8)) * 8
+    if (stream.ignore) stream.ignore(bitsLeft)
+    stream.writeBits(0, bitsLeft)
 
     let endIndex = stream.index
-
     stream.index = startIndex
     stream.writeInt32(endIndex / 8 - startIndex / 8 - 4)
     stream.index = endIndex
   }
-}
-
-function hasOnly (obj, objs) {
-  for (let o of objs) {
-    if (!Object.prototype.hasOwnProperty.call(obj, o)) return false
-  }
-  return (Object.keys(obj).length - 4) === objs.length
-}
-
-function writeArr (stream, arr) {
-  for (let a of arr) stream.writeBits(a, 1)
 }

@@ -3,7 +3,8 @@ module.exports = {
     return {}
   },
   encode (stream, message) {
-    // magic 24 end bytes idk
-    stream.writeBits(1599, 24)
+    let bitsLeft = (Math.ceil(stream.index / 8) - (stream.index / 8)) * 8
+    if (stream.ignore) stream.ignore(bitsLeft)
+    stream.writeBits(0, bitsLeft)
   }
 }
