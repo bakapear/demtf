@@ -12,6 +12,14 @@ let outputStream = new TestStream(1, demo.stream)
 for (let message of demo.iterMessages()) {
   if (outputStream.index !== 0) outputStream.writeInt8(message.type)
 
+  if (message.packetStream) {
+    let packetStream = new TestStream(1, message.packetStream)
+    for (let packet of demo.iterPackets(message.packetStream)) {
+      packetHandler.get(packet.type).encode(packetStream, packet)
+    }
+    message.packetStream = packetStream
+  }
+
   messageHandler.get(message.type).encode(outputStream, message)
 }
 
