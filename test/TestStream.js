@@ -4,113 +4,166 @@
 let { DynamicBitStream } = require('../lib/bit-buffer')
 
 class TestStream extends DynamicBitStream {
-  constructor (initialByteSize = 16 * 1024, compareStream) {
+  constructor (initialByteSize = 16 * 1024, compareBuffer) {
     super(initialByteSize)
-    this.compareStream = compareStream
+    this.compareBuffer = compareBuffer
     this.operations = 0
     this.disabled = false
     this.ignores = {}
     this.mark = 0
+    this.lock = null
   }
 }
 
 TestStream.prototype.writeASCIIString = function (string, bytes) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeASCIIString'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeASCIIString.call(this, string, bytes)
-  this.checkStreams()
+  this.checkStreams('writeASCIIString')
 }
 
 TestStream.prototype.writeUTF8String = function (string, bytes) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeUTF8String'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeUTF8String.call(this, string, bytes)
-  this.checkStreams()
+  this.checkStreams('writeUTF8String')
 }
 
 TestStream.prototype.writeBitStream = function (stream, length) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeBitStream'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeBitStream.call(this, stream, length)
-  this.checkStreams()
+  this.checkStreams('writeBitStream')
 }
 
 TestStream.prototype.writeBitVar = function (value, signed) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeBitVar'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeBitVar.call(this, value, signed)
-  this.checkStreams()
+  this.checkStreams('writeBitVar')
 }
 
 TestStream.prototype.writeVarInt = function (value, signed) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeVarInt'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeVarInt.call(this, value, signed)
-  this.checkStreams()
+  this.checkStreams('writeVarInt')
 }
 
 TestStream.prototype.writeBits = function (value, bits) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeBits'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeBits.call(this, value, bits)
-  this.checkStreams()
+  this.checkStreams('writeBits')
 }
 
 TestStream.prototype.writeBoolean = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeBits'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeBoolean.call(this, value)
   this.checkStreams()
 }
 
 TestStream.prototype.writeInt8 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeInt8'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeInt8.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeInt8')
 }
 
 TestStream.prototype.writeUint8 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeUint8'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeUint8.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeUint8')
 }
 
 TestStream.prototype.writeInt16 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeInt16'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeInt16.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeInt16')
 }
 
 TestStream.prototype.writeUint16 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeUint16'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeUint16.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeUint16')
 }
 
 TestStream.prototype.writeInt32 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeInt32'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeInt32.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeInt32')
 }
 
 TestStream.prototype.writeUint32 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeUint32'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeUint32.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeUint32')
 }
 
 TestStream.prototype.writeFloat32 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeFloat32'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeFloat32.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeFloat32')
 }
 
 TestStream.prototype.writeFloat64 = function (value) {
-  this.mark = this.index
+  if (!this.lock) {
+    this.lock = 'writeFloat64'
+    this.mark = this.index
+  }
   DynamicBitStream.prototype.writeFloat64.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeFloat64')
 }
 
-TestStream.prototype.checkStreams = function () {
+TestStream.prototype.checkStreams = function (unlock) {
+  if (this.lock !== unlock) return
+  this.lock = null
+
   this.operations++
 
-  if (this.ignores[this.mark]) return
+  if (this.ignores[this.index]) return
 
-  let A = this.buffer.slice(this.mark / 8, this.index / 8)
-  let B = this.compareStream.buffer.slice(this.mark / 8, this.index / 8)
+  let start = this.mark / 8
+  let end = this.index / 8
+
+  let A = this.buffer.slice(start, end)
+  let B = this.compareBuffer.slice(start, end)
+
   let AB = Buffer.compare(A, B)
   if (!this.disabled && AB !== 0) {
     console.log('DECODE', B.slice(-50))
@@ -120,7 +173,7 @@ TestStream.prototype.checkStreams = function () {
 }
 
 TestStream.prototype.ignore = function (bits) {
-  this.ignores[this.index] = bits
+  this.ignores[this.index + bits] = bits
 }
 
 module.exports = { TestStream }
