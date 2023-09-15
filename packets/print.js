@@ -3,6 +3,6 @@ module.exports = {
     return { value: stream.readUTF8String() }
   },
   encode (stream, packet) {
-    throw Error('Not implemented yet')
+    stream.writeUTF8String(packet.value)
   }
 }
