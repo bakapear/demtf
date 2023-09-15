@@ -20,15 +20,13 @@ module.exports = {
     }
   },
   encode (stream, packet) {
-    throw Error('Not implemented yet')
-    /*
     stream.writeInt16(packet.protocol)
     stream.writeInt32(packet.serverCount)
     stream.writeBoolean(packet.isHLTV)
     stream.writeBoolean(packet.isDedicated)
     stream.writeUint32(packet.clientCRC)
     stream.writeInt16(packet.maxClasses)
-    stream.writeArrayBuffer(Buffer.from(packet.mapHash, 'base64'), 16)
+    stream.writeArrayBuffer(new Uint8Array(Buffer.from(packet.mapHash, 'base64')).buffer, 16)
     stream.writeInt8(packet.playerSlot)
     stream.writeInt8(packet.maxClients)
     stream.writeFloat32(packet.tickInterval)
@@ -38,6 +36,5 @@ module.exports = {
     stream.writeUTF8String(packet.skyName)
     stream.writeUTF8String(packet.hostName)
     stream.writeBoolean(packet.isReplay)
-    */
   }
 }
