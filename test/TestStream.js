@@ -71,11 +71,11 @@ TestStream.prototype.writeBits = function (value, bits) {
 
 TestStream.prototype.writeBoolean = function (value) {
   if (!this.lock) {
-    this.lock = 'writeBits'
+    this.lock = 'writeBoolean'
     this.mark = this.index
   }
   DynamicBitStream.prototype.writeBoolean.call(this, value)
-  this.checkStreams()
+  this.checkStreams('writeBoolean')
 }
 
 TestStream.prototype.writeInt8 = function (value) {
