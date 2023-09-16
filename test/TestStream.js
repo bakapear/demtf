@@ -4,9 +4,9 @@
 let { DynamicBitStream } = require('../lib/bit-buffer')
 
 class TestStream extends DynamicBitStream {
-  constructor (initialByteSize = 16 * 1024, compareBuffer) {
+  constructor (initialByteSize = 16 * 1024, compareStream) {
     super(initialByteSize)
-    this.compareBuffer = compareBuffer
+    this.compareStream = compareStream
     this.operations = 0
     this.disabled = false
     this.ignores = {}
@@ -150,25 +150,61 @@ TestStream.prototype.writeFloat64 = function (value) {
   this.checkStreams('writeFloat64')
 }
 
+TestStream.prototype.writeArrayBuffer = function (value, length) {
+  if (!this.lock) {
+    this.lock = 'writeArrayBuffer'
+    this.mark = this.index
+  }
+  DynamicBitStream.prototype.writeArrayBuffer.call(this, value, length)
+  this.checkStreams('writeArrayBuffer')
+}
+
 TestStream.prototype.checkStreams = function (unlock) {
   if (this.lock !== unlock) return
   this.lock = null
-
   this.operations++
-
   if (this.ignores[this.index]) return
 
-  let start = this.mark / 8
-  let end = this.index / 8
+  let method = unlock.replace('write', 'read')
+  let bits = this.index - this.mark
 
-  let A = this.buffer.slice(start, end)
-  let B = this.compareBuffer.slice(start, end)
+  this.index -= bits
+  this.compareStream.index = this.index
 
-  let AB = Buffer.compare(A, B)
-  if (!this.disabled && AB !== 0) {
-    console.log('DECODE', B.slice(-50))
-    console.log('ENCODE', A.slice(-50))
-    throw Error(`[${AB}] Stream mismatch after ${this.operations} operations!`)
+  let arg
+  if (method.indexOf('String') > 0 || method.indexOf('Array') > 0) arg = bits / 8
+  else if (method.indexOf('Bit') > 0) arg = bits
+
+  console.log(`\n-- ${method}(${arg ?? ''}) --`)
+
+  let a = this[method](arg)
+  let b = this.compareStream[method](arg)
+
+  console.log('DECODE', [b])
+  console.log('ENCODE', [a])
+
+  let compare = null
+  if (a.constructor === Uint8Array) compare = Buffer.compare(a, b) === 0
+  else compare = a === b
+
+  if (!compare) {
+    let start = Math.floor(this.mark / 8)
+    let end = Math.ceil(this.index / 8)
+    let A = this.buffer.slice(start, end)
+    let B = this.compareStream.buffer.slice(start, end)
+
+    let e = new Error()
+
+    console.error()
+    console.error('----------------------------------------------------------------')
+    console.error(`ERROR: ${unlock} (${bits} bits) mismatch after ${this.operations} operations!`)
+    console.error(e.stack.split('\n')[3])
+    console.error()
+    console.error('DECODE', [b], B.slice(-50))
+    console.error('ENCODE', [a], A.slice(-50))
+    console.error('----------------------------------------------------------------')
+
+    process.exit()
   }
 }
 
