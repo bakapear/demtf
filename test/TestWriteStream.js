@@ -1,7 +1,7 @@
 // TestStream
 // compares with compareStream on each stream write if it still matches 1:1
 
-let { DynamicBitStream } = require('../lib/bit-buffer')
+let { DynamicBitStream, BitStream } = require('../lib/bit-buffer')
 
 class TestWriteStream extends DynamicBitStream {
   constructor (initialByteSize = 16 * 1024, compareStream) {
@@ -183,6 +183,12 @@ TestWriteStream.prototype.checkStreams = function (unlock) {
   let b = this.compareStream[method](arg)
 
   let check = null
+
+  if (a.constructor === BitStream) {
+    a = a._view._view.slice(a._index / 8, a._length / 8)
+    b = b._view._view.slice(b._index / 8, b._length / 8)
+  }
+
   if (a.constructor === Uint8Array) check = Buffer.compare(a, b) === 0
   else check = a === b
 
