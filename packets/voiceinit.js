@@ -13,6 +13,10 @@ module.exports = {
     }
   },
   encode (stream, packet) {
-    throw Error('Not implemented yet')
+    stream.writeASCIIString(packet.codec)
+    stream.writeUint8(packet.quality)
+    if (packet.quality === 255) {
+      stream.writeUint16(packet.extraData)
+    }
   }
 }
