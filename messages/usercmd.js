@@ -36,6 +36,10 @@ module.exports = {
     stream.writeInt32(message.sequenceOut)
 
     let startIndex = stream.index
+    if (stream.ignore) {
+      stream.ignore(32)
+      stream.compareStream.index += 32
+    }
     stream.index += 32
 
     let cmd = message.cmd

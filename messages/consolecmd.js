@@ -1,6 +1,10 @@
 module.exports = {
   decode (stream) {
     let tick = stream.readInt32()
+    if (stream.ignore) {
+      stream.ignore(32)
+      stream.compareStream.index += 32
+    }
     stream.index += 32 // message stream length, no need to readbitstream if it just contains 1 thing to read
     let command = stream.readUTF8String()
 

@@ -111,6 +111,10 @@ module.exports = {
     stream.writeInt32(message.tick)
 
     let startIndex = stream.index
+    if (stream.ignore) {
+      stream.ignore(32)
+      stream.compareStream.index += 32
+    }
     stream.index += 32
 
     for (let table of message.tables) {
