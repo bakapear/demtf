@@ -5,7 +5,7 @@ let { BitStream } = require('../lib/bit-buffer')
 
 class TestReadStream extends BitStream {
   constructor (stream) {
-    super(stream.buffer, stream._index / 8, stream._length / 8)
+    super(stream.buffer, stream._index / 8, stream.length / 8)
     this.lock = null
     this.mark = 0
     this.history = {}

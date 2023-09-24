@@ -7,11 +7,13 @@ class TestWriteStream extends DynamicBitStream {
   constructor (initialByteSize = 16 * 1024, compareStream) {
     super(initialByteSize)
     this.compareStream = compareStream
+    this.compareIndexLast = 0
     this.operations = 0
     this.disabled = false
     this.ignores = {}
     this.mark = 0
     this.lock = null
+    this.log = false
   }
 }
 
@@ -163,14 +165,22 @@ TestWriteStream.prototype.checkStreams = function (unlock) {
   if (this.lock !== unlock) return
   this.lock = null
   this.operations++
-  if (this.ignores[this.index]) return
+
+  if (this.ignores[this.index]) {
+    this.compareStream.index += this.ignores[this.index]
+    return
+  }
 
   let method = unlock.replace('write', 'read')
 
   let bits = this.index - this.mark
 
+  if (this.compareIndex !== null) {
+    this.compareStream.index -= this.compareIndexLast - this.compareIndex
+    this.compareIndex = null
+  }
+
   this.index -= bits
-  this.compareStream.index = this.index
 
   let compare = this.compareStream.history[this.compareStream.index]
   if (!compare) compare = {}
@@ -213,16 +223,27 @@ TestWriteStream.prototype.checkStreams = function (unlock) {
     process.exit()
   }
 
-  console.log('')
-  console.log(`@ ${new Error().stack.split('\n')[3].match(/\(.*/)[0]}`)
-  console.log(`-- ${method}(${arg ?? ''}) --`)
-  console.log('DECODE', method, [b])
-  console.log('ENCODE', method, [a])
-  console.log('SHOULD', compare.method, [compare.value], compare.args)
+  if (this.log) {
+    console.info('')
+    console.info(`@ ${new Error().stack.split('\n')[3].match(/\(.*/)[0]}`)
+    console.info(`-- ${method}(${arg ?? ''}) --`)
+    console.info('DECODE', method, [b])
+    console.info('ENCODE', method, [a])
+    console.info('SHOULD', compare.method, [compare.value], compare.args)
+  }
 }
 
 TestWriteStream.prototype.ignore = function (bits) {
   this.ignores[this.index + bits] = bits
+}
+
+TestWriteStream.prototype.start = function () {
+  this.compareIndex = this.compareIndexLast
+  this.compareIndexLast = this.compareStream.index
+}
+
+TestWriteStream.prototype.stop = function () {
+  this.compareStream.index = this.compareIndexLast
 }
 
 module.exports = { TestWriteStream }

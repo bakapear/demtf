@@ -13,24 +13,30 @@ demo.stream = new TestReadStream(demo.stream)
 let outputStream = new TestWriteStream(demo.stream.length / 8, demo.stream)
 
 for (let message of demo.iterMessages()) {
-  if (outputStream.index !== 0) {
-    outputStream.writeUint8(message.type)
-  }
+  outputStream.start()
+
+  if (outputStream.index !== 0) outputStream.writeUint8(message.type)
 
   if (message.packetStream) {
     message.packetStream = new TestReadStream(message.packetStream)
 
-    let packetStream = new TestWriteStream(message.packetStream._length / 8, message.packetStream)
+    let packetStream = new TestWriteStream(message.packetStream.length / 8, message.packetStream)
 
     for (let packet of demo.iterPackets(message.packetStream)) {
+      packetStream.start()
+
       packetStream.writeBits(packet.type, 6)
       packetHandler.get(packet.type).encode(packetStream, packet)
+
+      packetStream.stop()
     }
 
     message.packetStream = packetStream
   }
 
   messageHandler.get(message.type).encode(outputStream, message)
+
+  outputStream.stop()
 }
 
 let buffer = outputStream.buffer.slice(0, outputStream.index / 8)
