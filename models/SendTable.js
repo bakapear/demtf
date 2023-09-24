@@ -38,7 +38,7 @@ SendTable.prototype.flattenedProps = function () {
 
 SendTable.prototype.excludes = function () {
   let result = []
-  for (const prop of this.props) {
+  for (let prop of this.props) {
     if (prop.hasFlag(SENDPROP_FLAG.EXCLUDE)) result.push(prop)
     else if (prop.type === SENDPROP_TYPE.DataTable && prop.table) result = result.concat(prop.table.excludes)
   }
