@@ -6,6 +6,7 @@ module.exports = {
     }
   },
   encode (stream, packet) {
-    throw Error('Not implemented yet')
+    stream.writeInt8(packet.state)
+    stream.writeInt32(packet.count)
   }
 }
