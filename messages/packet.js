@@ -44,6 +44,8 @@ module.exports = {
     stream.writeInt32(message.sequenceOut)
 
     stream.writeInt32(message.packetStream.length / 8)
-    stream.writeBitStream(message.packetStream)
+    message.packetStream.index = 0
+    if (stream.ignore) stream.ignore(message.packetStream.length)
+    stream.writeBitStream(message.packetStream, message.packetStream.length)
   }
 }
