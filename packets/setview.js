@@ -3,6 +3,6 @@ module.exports = {
     return { index: stream.readBits(11) }
   },
   encode (stream, packet) {
-    throw Error('Not implemented yet')
+    stream.writeBits(packet.index, 11)
   }
 }
