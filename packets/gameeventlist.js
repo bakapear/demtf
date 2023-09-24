@@ -26,6 +26,33 @@ module.exports = {
     return { eventList }
   },
   encode (stream, packet) {
-    throw Error('Not implemented yet')
+    let definitions = Array.from(packet.eventList.values())
+    stream.writeBits(definitions.length, 9)
+
+    let lengthIndex = stream.index
+    if (stream.ignore) {
+      stream.ignore(20)
+      stream.compareStream.index += 20
+    }
+    stream.index += 20
+
+    let startIndex = stream.index
+
+    for (let definition of definitions) {
+      stream.writeBits(definition.id, 9)
+      stream.writeASCIIString(definition.name)
+      for (let entry of definition.entries) {
+        stream.writeBits(entry.type, 3)
+        stream.writeASCIIString(entry.name)
+      }
+      stream.writeBits(0, 3)
+    }
+
+    let endIndex = stream.index
+
+    stream.index = lengthIndex
+    stream.writeBits(endIndex - startIndex, 20)
+
+    stream.index = endIndex
   }
 }
